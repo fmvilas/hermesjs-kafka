@@ -1,6 +1,6 @@
 {
   "name": "hermesjs-kafka",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Kafka adapter for HermesJS",
   "main": "index.js",
   "repository": "https://github.com/hitchhq/hermes-kafka.git",
