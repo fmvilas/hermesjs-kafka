@@ -1,0 +1,21 @@
+{
+  "name": "hermesjs-kafka",
+  "version": "0.1.0",
+  "description": "Kafka adapter for HermesJS",
+  "main": "index.js",
+  "repository": "https://github.com/hitchhq/hermes-kafka.git",
+  "bugs": "https://github.com/hitchhq/hermes-kafka/issues",
+  "keywords": [
+    "kafka",
+    "hermes",
+    "hermesjs",
+    "adapter"
+  ],
+  "author": "Fran Mendez <fmvilas@gmail.com> (https://fmvilas.com)",
+  "license": "MIT",
+  "dependencies": {
+    "hermesjs": "^2.2.1",
+    "kafka-node": "^4.1.3"
+  },
+  "devDependencies": {}
+}
