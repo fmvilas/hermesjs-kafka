@@ -18,7 +18,8 @@ const app = new Hermes();
 
 app.addAdapter(KafkaAdapter, {
   kafkaHost: 'localhost:9092',
-  topics: ['test'],
+  topics: ['user__signedup'],
+  topicSeparator: '__',
 });
 ```
 

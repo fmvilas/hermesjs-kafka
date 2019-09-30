@@ -6,11 +6,18 @@ const hermes = new Hermes();
 hermes.addAdapter(KafkaAdapter, {
   kafkaHost: 'localhost:9092',
   groupId: 'test',
-  topics: ['test'],
+  topics: ['trip__requested', 'trip__accepted'],
+  topicSeparator: '__',
 });
 
-hermes.use('test', (message, next) => {
-  console.log(message);
+hermes.use('trip/requested', (message, next) => {
+  console.log('Trip requested');
+  hermes.send('test', {}, 'trip/accepted');
+  next();
+});
+
+hermes.use('trip/accepted', (message, next) => {
+  console.log('Trip accepted');
   next();
 });
 
