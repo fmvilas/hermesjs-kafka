@@ -2,6 +2,10 @@ const { ConsumerGroup, KafkaClient, Producer } = require('kafka-node');
 const { Adapter, Message } = require('hermesjs');
 
 class KafkaAdapter extends Adapter {
+  name () {
+    return 'Kafka adapter';
+  }
+
   async connect () {
     return this._connect();
   }
