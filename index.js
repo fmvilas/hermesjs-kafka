@@ -1,4 +1,4 @@
-const { ConsumerGroup, KafkaClient, Producer } = require('kafka-node');
+const { Kafka, logLevel } = require('kafkajs');
 const { Adapter, Message } = require('hermesjs');
 
 class KafkaAdapter extends Adapter {
@@ -14,56 +14,55 @@ class KafkaAdapter extends Adapter {
     return this._send(message, options);
   }
 
-  _connect () {
-    return new Promise((resolve, reject) => {
-      let resolved = false;
-      this.options.kafkaHost = this.options.kafkaHost || 'localhost:9092';
-      const consumerGroup = new ConsumerGroup(this.options, this.options.topics || []);
-      this.client = consumerGroup.client;
-
-      consumerGroup.client.on('ready', () => {
-        resolve(this);
-        resolved = true;
-      });
-      consumerGroup.client.on('error', (error) => {
-        this.emit('error', error);
-        if (!resolved) reject(error);
-      });
-      consumerGroup.on('error', (error) => {
-        this.emit('error', error);
-      });
-      consumerGroup.on('message', (message) => {
-        const msg = this._createMessage(message);
-        this.emit('message', msg);
-      });
+  async _connect () {
+    let connected = false;
+    this.options.topics = this.options.topics || [];
+    this.options.brokers = this.options.brokers || ['localhost:9092'];
+    this.client = new Kafka({
+      ...{ logLevel: logLevel.NOTHING },
+      ...this.options
     });
+
+    const consumer = this.client.consumer(this.options.consumerOptions);
+    try {
+      await consumer.connect();
+      connected = true;
+      await Promise.all(this.options.topics.map(topic => consumer.subscribe({ topic })));
+      await consumer.run({
+        eachMessage: async ({ topic, message }) => {
+          const msg = this._createMessage(topic, message);
+          this.emit('message', msg);
+        },
+      });
+    } catch (e) {
+      if (!connected) throw e;
+      this.emit('error', e);
+    }
   }
 
-  _send (message) {
-    return new Promise((resolve, reject) => {
-      const client = new KafkaClient(this.options);
-      const producer = new Producer(client);
-      producer.on('ready', () => {
-        producer.send([
-          { topic: this._translateHermesRoute(message.topic), key: message.headers.key, messages: message.payload }
-        ], (err, result) => {
-          if (err) return reject(err);
-          resolve();
-        });
+  async _send (message) {
+    try {
+      const kafka = new Kafka({
+        ...{ logLevel: logLevel.NOTHING },
+        ...this.options
       });
-
-      producer.on('error', (err) => {
-        reject(err);
+      const producer = kafka.producer(this.options.producerOptions);
+      await producer.connect();
+      await producer.send({
+        topic: this._translateHermesRoute(message.topic),
+        messages: [{ key: message.headers.key, value: message.payload }],
       });
-    });
+    } catch (e) {
+      this.emit('error', e);
+    }
   }
 
-  _createMessage (msg) {
+  _createMessage (topic, msg) {
     const headers = {
       key: msg.key,
     };
 
-    return new Message(this.hermes, msg.value, headers, this._translateTopicName(msg.topic));
+    return new Message(this.hermes, msg.value, headers, this._translateTopicName(topic));
   }
 
   _translateTopicName (topicName) {

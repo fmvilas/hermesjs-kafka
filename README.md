@@ -17,7 +17,11 @@ const KafkaAdapter = require('hermesjs-kafka');
 const app = new Hermes();
 
 app.addAdapter(KafkaAdapter, {
-  kafkaHost: 'localhost:9092',
+  clientId: 'myClientId',
+  brokers: ['localhost:9092'],
+  consumerOptions: {
+    groupId: 'myGroupId',
+  },
   topics: ['user__signedup'],
   topicSeparator: '__',
 });

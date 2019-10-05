@@ -4,8 +4,11 @@ const KafkaAdapter = require('..');
 const hermes = new Hermes();
 
 hermes.addAdapter(KafkaAdapter, {
-  kafkaHost: 'localhost:9092',
-  groupId: 'test',
+  brokers: ['localhost:9092'],
+  clientId: 'test',
+  consumerOptions: {
+    groupId: 'myGroupId',
+  },
   topics: ['trip__requested', 'trip__accepted'],
   topicSeparator: '__',
 });
