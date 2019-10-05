@@ -51,9 +51,11 @@ class KafkaAdapter extends Adapter {
       });
       const producer = kafka.producer(this.options.producerOptions);
       await producer.connect();
+      const message = { value: message.payload };
+      if (message.headers && message.headers.key) message.key = message.headers.key;
       await producer.send({
         topic: this._translateHermesRoute(message.topic),
-        messages: [{ key: message.headers.key, value: message.payload }],
+        messages: [message],
       });
     } catch (e) {
       this.emit('error', e);
