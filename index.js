@@ -14,30 +14,33 @@ class KafkaAdapter extends Adapter {
     return this._send(message, options);
   }
 
-  async _connect () {
-    let connected = false;
-    this.options.topics = this.options.topics || [];
-    this.options.brokers = this.options.brokers || ['localhost:9092'];
-    this.client = new Kafka({
-      ...{ logLevel: logLevel.NOTHING },
-      ...this.options
-    });
-
-    const consumer = this.client.consumer(this.options.consumerOptions);
-    try {
-      await consumer.connect();
-      connected = true;
-      await Promise.all(this.options.topics.map(topic => consumer.subscribe({ topic })));
-      await consumer.run({
-        eachMessage: async ({ topic, message }) => {
-          const msg = this._createMessage(topic, message);
-          this.emit('message', msg);
-        },
+  _connect () {
+    return new Promise(async (resolve, reject) => {
+      let connected = false;
+      this.options.topics = this.options.topics || [];
+      this.options.brokers = this.options.brokers || ['localhost:9092'];
+      this.client = new Kafka({
+        ...{ logLevel: logLevel.NOTHING },
+        ...this.options
       });
-    } catch (e) {
-      if (!connected) throw e;
-      this.emit('error', e);
-    }
+
+      const consumer = this.client.consumer(this.options.consumerOptions);
+      try {
+        await consumer.connect();
+        connected = true;
+        resolve(this);
+        await Promise.all(this.options.topics.map(topic => consumer.subscribe({ topic })));
+        await consumer.run({
+          eachMessage: async ({ topic, message }) => {
+            const msg = this._createMessage(topic, message);
+            this.emit('message', msg);
+          },
+        });
+      } catch (e) {
+        if (!connected) return reject(e);
+        this.emit('error', e);
+      }
+    });
   }
 
   async _send (message) {
