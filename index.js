@@ -1,5 +1,6 @@
 const { Kafka, logLevel } = require('kafkajs');
 const { Adapter, Message } = require('hermesjs');
+const uuid = require('uuid/v1');
 
 class KafkaAdapter extends Adapter {
   name () {
@@ -17,12 +18,16 @@ class KafkaAdapter extends Adapter {
   _connect () {
     return new Promise(async (resolve, reject) => {
       let connected = false;
+      this.options = this.options || {};
       this.options.topics = this.options.topics || [];
       this.options.brokers = this.options.brokers || ['localhost:9092'];
       this.client = new Kafka({
         ...{ logLevel: logLevel.NOTHING },
         ...this.options
       });
+
+      this.options.consumerOptions = this.options.consumerOptions || {};
+      this.options.consumerOptions.groupId = this.options.consumerOptions.groupId || uuid();
 
       const consumer = this.client.consumer(this.options.consumerOptions);
       try {
