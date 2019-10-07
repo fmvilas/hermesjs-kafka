@@ -27,9 +27,9 @@ class KafkaAdapter extends Adapter {
       const consumer = this.client.consumer(this.options.consumerOptions);
       try {
         await consumer.connect();
+        await Promise.all(this.options.topics.map(topic => consumer.subscribe({ topic: `${this.options.topicPrefix || ''}${topic}` })));
         connected = true;
         resolve(this);
-        await Promise.all(this.options.topics.map(topic => consumer.subscribe({ topic })));
         await consumer.run({
           eachMessage: async ({ topic, message }) => {
             const msg = this._createMessage(topic, message);
@@ -71,8 +71,16 @@ class KafkaAdapter extends Adapter {
   }
 
   _translateTopicName (topicName) {
-    if (this.options.topicSeparator === undefined) return topicName;
-    return topicName.replace(new RegExp(`${this.options.topicSeparator}`, 'g'), '/');
+    let result = topicName;
+    if (typeof this.options.topicPrefix === 'string' && result.startsWith(this.options.topicPrefix)) {
+      result = result.substr(this.options.topicPrefix.length);
+    }
+
+    if (typeof this.options.topicSeparator === 'string') {
+      result = result.replace(new RegExp(`${this.options.topicSeparator}`, 'g'), '/');
+    }
+
+    return result;
   }
 
   _translateTopicNames (topicNames) {
@@ -81,8 +89,14 @@ class KafkaAdapter extends Adapter {
   }
 
   _translateHermesRoute (hermesRoute) {
-    if (this.options.topicSeparator === undefined) return hermesRoute;
-    return hermesRoute.replace(/\//g, this.options.topicSeparator);
+    let result = hermesRoute;
+    if (this.options.topicSeparator !== undefined) {
+      result = hermesRoute.replace(/\//g, this.options.topicSeparator);
+    }
+
+    result = `${this.options.topicPrefix || ''}${result}`;
+
+    return result;
   }
 }
 
